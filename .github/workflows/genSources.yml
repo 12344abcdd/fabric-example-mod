@@ -3,7 +3,7 @@
 # certain platforms or Java versions, and provides a first line of defence
 # against bad commits.
 
-name: build
+name: genSources
 on: [pull_request, push, workflow_dispatch]
 
 jobs:
@@ -16,7 +16,7 @@ jobs:
         uses: gradle/actions/wrapper-validation@v6
       - name: setup jdk
         uses: actions/setup-java@v5
-        with:
+        with:  
           java-version: '25'
           distribution: 'microsoft'
       - name: make gradle wrapper executable
@@ -26,5 +26,5 @@ jobs:
       - name: capture build artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: Artifacts
+          name: all
           path: .gradle/loom-cache/minecraftMaven
