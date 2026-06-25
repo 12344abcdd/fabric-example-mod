@@ -26,7 +26,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Run gradlew build
-        run: ./gradlew build
+        run: ./gradlew gensources build
 
       - name: Configure git identity
         run: |
@@ -35,13 +35,13 @@ jobs:
 
       - name: Force overwrite out branch with all current files
         run: |
-          # 新建干净孤儿分支，彻底清空历史
+          # æ°å»ºå¹²åå­¤å¿åæ¯ï¼å½»åºæ¸ç©ºåå²
           git checkout --orphan temp_out
-          # 强制添加当前目录所有文件（包含隐藏文件）
+          # å¼ºå¶æ·»å å½åç®å½æææä»¶ï¼åå«éèæä»¶ï¼
           git add --force .
           git commit -m "Build snapshot $GITHUB_SHA"
-          # 强制覆盖远端 out 分支
+          # å¼ºå¶è¦çè¿ç«¯ out åæ¯
           git push origin temp_out:out --force
-          # 删除本地临时分支
+          # å é¤æ¬å°ä¸´æ¶åæ¯
           #git checkout main
           #git branch -D temp_out
