@@ -43,5 +43,5 @@ jobs:
           # 强制覆盖远端 out 分支
           git push origin temp_out:out --force
           # 删除本地临时分支
-          git checkout main
+          #git checkout main
           git branch -D temp_out
