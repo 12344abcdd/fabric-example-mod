@@ -35,13 +35,7 @@ jobs:
 
       - name: Force overwrite out branch with all current files
         run: |
-          # æ°å»ºå¹²åå­¤å¿åæ¯ï¼å½»åºæ¸ç©ºåå²
           git checkout --orphan temp_out
-          # å¼ºå¶æ·»å å½åç®å½æææä»¶ï¼åå«éèæä»¶ï¼
           git add --force .
           git commit -m "Build snapshot $GITHUB_SHA"
-          # å¼ºå¶è¦çè¿ç«¯ out åæ¯
           git push origin temp_out:out --force
-          # å é¤æ¬å°ä¸´æ¶åæ¯
-          #git checkout main
-          #git branch -D temp_out
