@@ -22,6 +22,21 @@ jobs:
           java-version: 25
           distribution: temurin
 
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v6.0.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ./.gradle
+          key: gradle
+          restore-keys: |
+            gradle
+          upload-chunk-size: 10485760
+          enableCrossOsArchive: false
+          fail-on-cache-miss: false
+          lookup-only: false
+          save-always: false
+    
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
