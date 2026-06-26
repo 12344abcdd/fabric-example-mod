@@ -40,8 +40,11 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
+      - name: Run gradlew gencources
+        run: ./gradlew gensources
+
       - name: Run gradlew build
-        run: ./gradlew gensources build
+        run: ./gradlew build
 
       - name: Configure git identity
         run: |
