@@ -60,6 +60,7 @@ java {
 	targetCompatibility = JavaVersion.VERSION_25
 }
 
+import net.fabricmc.loom.api.LoomGradleExtensionAPI
 tasks.register("setup") {
     group = "loom"
     description = "执行genSources，解压common源码到src/main/java，client源码到src/client/java"
@@ -73,7 +74,7 @@ tasks.register("setup") {
         println("Common source jar: " + commonSrcJar)
 
         // 2. 获取client源码jar（通过minecraftProvider文件属性，不碰mappingsProvider）
-        import net.fabricmc.loom.api.LoomGradleExtensionAPI
+        
         LoomGradleExtensionAPI loom = project.extensions.getByType(LoomGradleExtensionAPI)
         File clientSrcJar = loom.minecraftProvider.clientMappedSourcesJar.asFile
         println("Client source jar: " + clientSrcJar)
