@@ -60,48 +60,47 @@ java {
 	targetCompatibility = JavaVersion.VERSION_25
 }
 
-import net.fabricmc.loom.api.LoomGradleExtensionAPI
 tasks.register("setup") {
     group = "loom"
-    description = "执行genSources，解压common源码到src/main/java，client源码到src/client/java"
-    // 先跑genSources生成源码jar
+    description = "Run genSources & extract MC common to src/main/java, client to src/client/java"
     dependsOn(tasks.genSources)
 
     doLast {
-        // 1. 获取genSources任务，直接拿它输出的common sources jar（无API依赖）
-        def genTask = tasks.genSources
-        File commonSrcJar = genTask.sourcesDestinationJar.asFile
-        println("Common source jar: " + commonSrcJar)
-
-        // 2. 获取client源码jar（通过minecraftProvider文件属性，不碰mappingsProvider）
-        
         LoomGradleExtensionAPI loom = project.extensions.getByType(LoomGradleExtensionAPI)
-        File clientSrcJar = loom.minecraftProvider.clientMappedSourcesJar.asFile
-        println("Client source jar: " + clientSrcJar)
+
+        // ========== 1. 反射获取 common -sources.jar（兼容哈希文件夹，不依赖私有provider） ==========
+        Method getJarWithSuffix = GenerateSourcesTask.getDeclaredMethod("getMappedJarFileWithSuffix", Project.class, String.class)
+        getJarWithSuffix.setAccessible(true)
+        File commonSrcJar = getJarWithSuffix.invoke(null, project, "-sources.jar")
+        println("Common sources jar: " + commonSrcJar.absolutePath)
+
+        // ========== 2. Client源码Jar（官方公开API，稳定可用） ==========
+        File clientSrcJar = loom.minecraftProvider.clientMappedSourcesJar.get().asFile
+        println("Client sources jar: " + clientSrcJar.absolutePath)
 
         // 目标目录
         File targetCommon = file("src/main/java")
         File targetClient = file("src/client/java")
 
-        // 清空目录，不想删自己代码注释掉这两行
+        // 清空旧MC源码（注释保留自己代码）
         delete(targetCommon)
         delete(targetClient)
         targetCommon.mkdirs()
         targetClient.mkdirs()
 
-        // 解压common -> src/main/java
+        // 解压 common
         copy {
             from zipTree(commonSrcJar)
             into targetCommon
         }
-        println("✅ Common MC sources extracted to ${targetCommon.absolutePath}")
+        println("✅ Extracted common MC sources to ${targetCommon}")
 
-        // 解压client -> src/client/java
+        // 解压 client
         copy {
             from zipTree(clientSrcJar)
             into targetClient
         }
-        println("✅ Client MC sources extracted to ${targetClient.absolutePath}")
+        println("✅ Extracted client MC sources to ${targetClient}")
     }
 }
 
