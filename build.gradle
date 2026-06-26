@@ -59,8 +59,8 @@ java {
 	sourceCompatibility = JavaVersion.VERSION_25
 	targetCompatibility = JavaVersion.VERSION_25
 }
-import net.fabricmc.loom.LoomGradleExtension
-import net.fabricmc.loom.task.GenerateSourcesTask
+
+import net.fabricmc.loom.api.LoomGradleExtensionAPI
 
 tasks.register("setup") {
     group = "loom"
@@ -68,45 +68,41 @@ tasks.register("setup") {
     dependsOn(tasks.genSources)
 
     doLast {
-        LoomGradleExtension loom = project.extensions.getByType(LoomGradleExtension)
-        def genSourcesTask = tasks.named("genSources", GenerateSourcesTask.class).get()
+        // 改用API接口，修复Extension不存在报错
+        LoomGradleExtensionAPI loom = project.extensions.getByType(LoomGradleExtensionAPI)
 
-        // genSources 直接输出的源码Jar（自动带哈希目录，无需手动拼接路径）
-        File commonSourcesJar = genSourcesTask.parameters.sourcesDestinationJar.get().asFile
-        // client 单独获取
-        File clientSourcesJar = loom.minecraftProvider.clientMappedSourcesJar
+        // 通用（common）反编译源码jar
+        File commonSrcJar = loom.mappingsProvider.mappedSourcesJar.get()
+        // client端反编译源码jar
+        File clientSrcJar = loom.minecraftProvider.clientMappedSourcesJar.get()
 
-        println("Common源码Jar：" + commonSourcesJar)
-        println("Client源码Jar：" + clientSourcesJar)
+        println("Common sources jar: " + commonSrcJar.absolutePath)
+        println("Client sources jar: " + clientSrcJar.absolutePath)
 
-        // 目标目录
         File targetCommon = file("src/main/java")
         File targetClient = file("src/client/java")
 
-        // 可选：清空目录，不想删原有代码就注释掉这两行
+        // 清空目录，不想删除原有代码就注释这两行
         delete(targetCommon)
         delete(targetClient)
         targetCommon.mkdirs()
         targetClient.mkdirs()
 
-        // 解压 common -> src/main/java
+        // 解压common到main
         copy {
-            from zipTree(commonSourcesJar)
+            from zipTree(commonSrcJar)
             into targetCommon
         }
-        println("✅ common 源码解压完成 -> ${targetCommon.absolutePath}")
+        println("✅ Common MC sources extracted to ${targetCommon}")
 
-        // 解压 client -> src/client/java
+        // 解压client到client源码集
         copy {
-            from zipTree(clientSourcesJar)
+            from zipTree(clientSrcJar)
             into targetClient
         }
-        println("✅ client 源码解压完成 -> ${targetClient.absolutePath}")
+        println("✅ Client MC sources extracted to ${targetClient}")
     }
 }
-
-// 可选：每次genSources自动执行解压
-// tasks.genSources.finalizedBy(tasks.setupMcSources)
 
 jar {
 	def projectName = project.name
