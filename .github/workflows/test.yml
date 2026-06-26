@@ -40,8 +40,8 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Run gradlew gencources
-        run: ./gradlew gensources
+      - name: Run gradlew setup
+        run: ./gradlew setup
 
       - name: Run gradlew build
         run: ./gradlew build
