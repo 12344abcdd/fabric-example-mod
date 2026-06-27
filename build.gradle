@@ -65,7 +65,7 @@ tasks.register("setup") {
     group = "loom"
     description = "Run genSources & extract MC common to src/main/java, client to src/client/java"
     // 先执行源码生成任务
-    dependsOn("genCommonSources", "genClientSources")
+    dependsOn("genCommonSources", "genClientOnlySources")
 
     doLast {
         LoomGradleExtensionAPI loom = project.extensions.getByType(LoomGradleExtensionAPI)
@@ -76,7 +76,7 @@ tasks.register("setup") {
         println("Common sources jar path: " + commonSrcJar.absolutePath)
 
         // 2. 获取 client 源码任务 genSourcesClient
-        GenerateSourcesTask clientGenTask = tasks.named("genClientSources", GenerateSourcesTask).get()
+        GenerateSourcesTask clientGenTask = tasks.named("genClientOnlySources", GenerateSourcesTask).get()
         File clientSrcJar = clientGenTask.getSourcesOutputJar().getAsFile()
         println("Client sources jar path: " + clientSrcJar.absolutePath)
 
