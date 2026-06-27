@@ -56,47 +56,55 @@ java {
 	targetCompatibility = JavaVersion.VERSION_25
 }
 
+import net.fabricmc.loom.api.LoomGradleExtensionAPI
+import net.fabricmc.loom.task.GenerateSourcesTask
+import java.lang.reflect.Method
+import java.nio.file.Path
+
 tasks.register("setup") {
     group = "loom"
-    description = "Run genSources & extract MC common to src/main/java, client to src/client/java"
+    description = "Run genSources, extract common MC sources to src/main/java, client to src/client/java"
     dependsOn(tasks.genSources)
 
     doLast {
+        // 获取 loom 扩展
         LoomGradleExtensionAPI loom = project.extensions.getByType(LoomGradleExtensionAPI)
 
-        // ========== 1. 反射获取 common -sources.jar（兼容哈希文件夹，不依赖私有provider） ==========
-        Method getJarWithSuffix = GenerateSourcesTask.getDeclaredMethod("getMappedJarFileWithSuffix", Project.class, String.class)
-        getJarWithSuffix.setAccessible(true)
-        File commonSrcJar = getJarWithSuffix.invoke(null, project, "-sources.jar")
+        // ========== 获取 common (main) sources jar 官方API ==========
+        // false = common jar decompile task
+        GenerateSourcesTask commonGenTask = loom.getDecompileTask(loom.decompilers.getByName("vineflower"), false)
+        File commonSrcJar = commonGenTask.getSourcesOutputJar().getAsFile()
         println("Common sources jar: " + commonSrcJar.absolutePath)
 
-        // ========== 2. Client源码Jar（官方公开API，稳定可用） ==========
-        File clientSrcJar = loom.minecraftProvider.clientMappedSourcesJar.get().asFile
+        // ========== 获取 client sources jar 官方API ==========
+        // true = client jar decompile task
+        GenerateSourcesTask clientGenTask = loom.getDecompileTask(loom.decompilers.getByName("vineflower"), true)
+        File clientSrcJar = clientGenTask.getSourcesOutputJar().getAsFile()
         println("Client sources jar: " + clientSrcJar.absolutePath)
 
         // 目标目录
         File targetCommon = file("src/main/java")
         File targetClient = file("src/client/java")
 
-        // 清空旧MC源码（注释保留自己代码）
+        // 清空原版MC代码（注释这两行保留自己的mod代码）
         delete(targetCommon)
         delete(targetClient)
         targetCommon.mkdirs()
         targetClient.mkdirs()
 
-        // 解压 common
+        // 解压 common 源码到 main
         copy {
             from zipTree(commonSrcJar)
             into targetCommon
         }
-        println("✅ Extracted common MC sources to ${targetCommon}")
+        println("✅ Extracted common Minecraft sources to ${targetCommon.absolutePath}")
 
-        // 解压 client
+        // 解压 client 源码到 client
         copy {
             from zipTree(clientSrcJar)
             into targetClient
         }
-        println("✅ Extracted client MC sources to ${targetClient}")
+        println("✅ Extracted client Minecraft sources to ${targetClient.absolutePath}")
     }
 }
 
