@@ -63,43 +63,41 @@ import java.nio.file.Path
 
 tasks.register("setup") {
     group = "loom"
-    description = "Run genSources, extract common MC sources to src/main/java, client to src/client/java"
-    dependsOn(tasks.genSources)
+    description = "Run genSources & extract MC common to src/main/java, client to src/client/java"
+    // 先执行源码生成任务
+    dependsOn("genSources", "genSourcesClient")
 
     doLast {
-        // 获取 loom 扩展
         LoomGradleExtensionAPI loom = project.extensions.getByType(LoomGradleExtensionAPI)
 
-        // ========== 获取 common (main) sources jar 官方API ==========
-        // false = common jar decompile task
-        GenerateSourcesTask commonGenTask = loom.getDecompileTask(loom.decompilers.getByName("vineflower"), false)
+        // 1. 获取 common 源码任务 genSources
+        GenerateSourcesTask commonGenTask = tasks.named("genSources", GenerateSourcesTask).get()
         File commonSrcJar = commonGenTask.getSourcesOutputJar().getAsFile()
-        println("Common sources jar: " + commonSrcJar.absolutePath)
+        println("Common sources jar path: " + commonSrcJar.absolutePath)
 
-        // ========== 获取 client sources jar 官方API ==========
-        // true = client jar decompile task
-        GenerateSourcesTask clientGenTask = loom.getDecompileTask(loom.decompilers.getByName("vineflower"), true)
+        // 2. 获取 client 源码任务 genSourcesClient
+        GenerateSourcesTask clientGenTask = tasks.named("genSourcesClient", GenerateSourcesTask).get()
         File clientSrcJar = clientGenTask.getSourcesOutputJar().getAsFile()
-        println("Client sources jar: " + clientSrcJar.absolutePath)
+        println("Client sources jar path: " + clientSrcJar.absolutePath)
 
-        // 目标目录
+        // 目标源码目录
         File targetCommon = file("src/main/java")
         File targetClient = file("src/client/java")
 
-        // 清空原版MC代码（注释这两行保留自己的mod代码）
+        // 清空旧MC源码，注释两行保留自己写的mod代码
         delete(targetCommon)
         delete(targetClient)
         targetCommon.mkdirs()
         targetClient.mkdirs()
 
-        // 解压 common 源码到 main
+        // 解压 common 到 main
         copy {
             from zipTree(commonSrcJar)
             into targetCommon
         }
         println("✅ Extracted common Minecraft sources to ${targetCommon.absolutePath}")
 
-        // 解压 client 源码到 client
+        // 解压 client 到 client
         copy {
             from zipTree(clientSrcJar)
             into targetClient
