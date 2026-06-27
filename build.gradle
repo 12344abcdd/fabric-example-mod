@@ -65,7 +65,7 @@ tasks.register("setup") {
     group = "loom"
     description = "Run genSources & extract MC common to src/main/java, client to src/client/java"
     // 先执行源码生成任务
-    dependsOn("genSources", "genSourcesClient")
+    dependsOn("genCommonSources", "genClientSources")
 
     doLast {
         LoomGradleExtensionAPI loom = project.extensions.getByType(LoomGradleExtensionAPI)
