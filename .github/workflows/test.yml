@@ -41,7 +41,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Run gradlew setup
-        run: ./gradlew setup
+        run: ./gradlew tasks -all
 
       - name: Run gradlew build
         run: ./gradlew build
