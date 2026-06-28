@@ -56,11 +56,6 @@ java {
 	targetCompatibility = JavaVersion.VERSION_25
 }
 
-plugins {
-    id("fabric-loom") version "1.6"
-    id("java")
-}
-
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import net.fabricmc.loom.task.GenerateSourcesTask
 import org.gradle.api.tasks.Sync
