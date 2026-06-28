@@ -56,65 +56,51 @@ java {
 	targetCompatibility = JavaVersion.VERSION_25
 }
 
+plugins {
+    id("fabric-loom") version "1.6"
+    id("java")
+}
+
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import net.fabricmc.loom.task.GenerateSourcesTask
-import java.lang.reflect.Method
-import java.nio.file.Path
+import org.gradle.api.tasks.Sync
 
-tasks.register("setup") {
-    group = "loom"
-    description = "Run genSources & extract MC common to src/main/java, client to src/client/java"
-    dependsOn("genSources")
+val loom = project.extensions.getByType(LoomGradleExtensionAPI::class.java)
+val decompilerCfg = loom.decompilerOptions.getByName("vineflower")
+
+// 获取 genCommonSources、genClientOnlySources 任务
+val genCommonSources: GenerateSourcesTask = loom.getDecompileTask(decompilerCfg, false)
+val genClientOnlySources: GenerateSourcesTask = loom.getDecompileTask(decompilerCfg, true)
+
+tasks.register<Sync>("setup") {
+    dependsOn(genCommonSources, genClientOnlySources)
+
+    val commonDir = file("./mcsrc/main/java")
+    val clientDir = file("./mcsrc/client/java")
+
+    doFirst {
+        delete(commonDir, clientDir)
+        commonDir.mkdirs()
+        clientDir.mkdirs()
+    }
+
+    // 解压公共源码
+    from(zipTree(genCommonSources.sourcesOutputJar)) {
+        include("**/*.java")
+        into(commonDir)
+    }
+    // 解压客户端源码
+    from(zipTree(genClientOnlySources.sourcesOutputJar)) {
+        include("**/*.java")
+        into(clientDir)
+    }
+
+    outputs.dir(commonDir)
+    outputs.dir(clientDir)
 
     doLast {
-        // 存储两个源码Jar
-        File commonSrcJar = null
-        File clientSrcJar = null
-
-        // 遍历所有 GenerateSourcesTask，区分 common / client
-        tasks.withType(GenerateSourcesTask).each { GenerateSourcesTask task ->
-            String jarName = task.getInputJarName().get()
-            File jar = task.getSourcesOutputJar().getAsFile()
-            println("Found decompile task [${task.name}] jarName=${jarName} path=${jar}")
-
-            if (jarName == "minecraft-common") {
-                commonSrcJar = jar
-            } else if (jarName == "minecraft-client") {
-                clientSrcJar = jar
-            }
-        }
-
-        // 校验文件存在
-        if (!commonSrcJar?.exists()) {
-            throw new RuntimeException("Common sources jar not found, run ./gradlew genSources first")
-        }
-        if (!clientSrcJar?.exists()) {
-            throw new RuntimeException("Client sources jar not found, run ./gradlew genSources first")
-        }
-
-        // 目标目录
-        File targetCommon = file("src/main/java")
-        File targetClient = file("src/client/java")
-
-        // 清空原版MC源码（注释两行保留自己mod代码）
-        delete(targetCommon)
-        delete(targetClient)
-        targetCommon.mkdirs()
-        targetClient.mkdirs()
-
-        // 解压 common -> src/main/java
-        copy {
-            from zipTree(commonSrcJar)
-            into targetCommon
-        }
-        println("✅ Extracted common Minecraft sources to ${targetCommon.absolutePath}")
-
-        // 解压 client -> src/client/java
-        copy {
-            from zipTree(clientSrcJar)
-            into targetClient
-        }
-        println("✅ Extracted client Minecraft sources to ${targetClient.absolutePath}")
+        logger.lifecycle("通用MC源码路径：${commonDir.absolutePath}")
+        logger.lifecycle("客户端MC源码路径：${clientDir.absolutePath}")
     }
 }
 
