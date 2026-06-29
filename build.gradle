@@ -64,8 +64,8 @@ def val loom = project.extensions.getByType(LoomGradleExtensionAPI::class.java)
 def val decompilerCfg = loom.decompilerOptions.getByName("vineflower")
 
 // 获取 genCommonSources、genClientOnlySources 任务
-def val genCommonSources: GenerateSourcesTask = loom.getDecompileTask(decompilerCfg, false)
-def val genClientOnlySources: GenerateSourcesTask = loom.getDecompileTask(decompilerCfg, true)
+val genCommonSources: GenerateSourcesTask = loom.getDecompileTask(decompilerCfg, false)
+val genClientOnlySources: GenerateSourcesTask = loom.getDecompileTask(decompilerCfg, true)
 
 tasks.register<Sync>("setup") {
     dependsOn(genCommonSources, genClientOnlySources)
