@@ -60,15 +60,15 @@ import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import net.fabricmc.loom.task.GenerateSourcesTask
 import org.gradle.api.tasks.Sync
 
-val loom = project.extensions.getByType(LoomGradleExtensionAPI::class.java)
-val decompilerCfg = loom.decompilerOptions.getByName("vineflower")
-
-// 获取 genCommonSources、genClientOnlySources 任务
-val genCommonSources: GenerateSourcesTask = loom.getDecompileTask(decompilerCfg, false)
-val genClientOnlySources: GenerateSourcesTask = loom.getDecompileTask(decompilerCfg, true)
-
 tasks.register<Sync>("setup") {
     dependsOn(genCommonSources, genClientOnlySources)
+	
+    val loom = project.extensions.getByType(LoomGradleExtensionAPI::class.java)
+    val decompilerCfg = loom.decompilerOptions.getByName("vineflower")
+
+    // 获取 genCommonSources、genClientOnlySources 任务
+    val genCommonSources: GenerateSourcesTask = loom.getDecompileTask(decompilerCfg, false)
+    val genClientOnlySources: GenerateSourcesTask = loom.getDecompileTask(decompilerCfg, true)
 
     val commonDir = file("./mcsrc/main/java")
     val clientDir = file("./mcsrc/client/java")
