@@ -1,0 +1,126 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+	id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+repositories {
+
+}
+
+loom {
+	splitEnvironmentSourceSets()
+
+	mods {
+		"modid" {
+			sourceSet sourceSets.main
+			sourceSet sourceSets.client
+		}
+	}
+
+}
+
+dependencies {
+	// To change the versions see the gradle.properties file
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+	// Fabric API. This is technically optional, but you probably want it anyway.
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	
+}
+
+processResources {
+	def version = project.version
+	inputs.property "version", version
+
+	filesMatching("fabric.mod.json") {
+		expand "version": version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 25
+}
+
+java {
+	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
+	// if it is present.
+	// If you remove this line, sources will not be generated.
+	withSourcesJar()
+
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+import net.fabricmc.loom.api.LoomGradleExtensionAPI
+import net.fabricmc.loom.task.GenerateSourcesTask
+import org.gradle.api.tasks.Sync
+
+def val loom = project.extensions.getByType(LoomGradleExtensionAPI::class.java)
+def val decompilerCfg = loom.decompilerOptions.getByName("vineflower")
+
+// 获取 genCommonSources、genClientOnlySources 任务
+val genCommonSources: GenerateSourcesTask = loom.getDecompileTask(decompilerCfg, false)
+val genClientOnlySources: GenerateSourcesTask = loom.getDecompileTask(decompilerCfg, true)
+
+tasks.register<Sync>("setup") {
+    dependsOn(genCommonSources, genClientOnlySources)
+	
+    val commonDir = file("./mcsrc/main/java")
+    val clientDir = file("./mcsrc/client/java")
+
+    doFirst {
+        delete(commonDir, clientDir)
+        commonDir.mkdirs()
+        clientDir.mkdirs()
+    }
+
+    // 解压公共源码
+    from(zipTree(genCommonSources.sourcesOutputJar)) {
+        include("**/*.java")
+        into(commonDir)
+    }
+    // 解压客户端源码
+    from(zipTree(genClientOnlySources.sourcesOutputJar)) {
+        include("**/*.java")
+        into(clientDir)
+    }
+
+    outputs.dir(commonDir)
+    outputs.dir(clientDir)
+
+    doLast {
+        logger.lifecycle("通用MC源码路径：${commonDir.absolutePath}")
+        logger.lifecycle("客户端MC源码路径：${clientDir.absolutePath}")
+    }
+}
+
+jar {
+	def projectName = project.name
+	inputs.property "projectName", projectName
+
+	from("LICENSE") {
+		rename { "${it}_$projectName"}
+	}
+}
+
+// configure the maven publication
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			from components.java
+		}
+	}
+
+	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
+	repositories {
+		// Add repositories to publish to here.
+		// Notice: This block does NOT have the same function as the block in the top level.
+		// The repositories here will be used for publishing your artifact, not for
+		// retrieving dependencies.
+	}
+}
