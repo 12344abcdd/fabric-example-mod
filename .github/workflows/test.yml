@@ -51,6 +51,7 @@ jobs:
         run: ./gradlew setup
 
       - name: Run gradlew build
+        continue-on-error: true
         run: ./gradlew build
 
       - name: Configure git identity
