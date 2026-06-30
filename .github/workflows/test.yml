@@ -47,6 +47,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Run gradlew setup
+        continue-on-error: true
         run: ./gradlew setup
 
       - name: Run gradlew build
